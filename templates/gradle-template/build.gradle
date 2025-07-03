@@ -1,0 +1,93 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'com.github.spotbugs' version '5.0.13'
+}
+
+group = 'com.example'
+version = '1.0.0'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 测试框架
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.mockito:mockito-core:5.1.1'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+    
+    // 日志框架
+    implementation 'org.slf4j:slf4j-api:2.0.6'
+    implementation 'ch.qos.logback:logback-classic:1.4.5'
+    
+    // 工具库
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'com.google.guava:guava:31.1-jre'
+    
+    // JSON处理
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.2'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.8"
+}
+
+checkstyle {
+    toolVersion = '10.7.0'
+    configFile = file("config/checkstyle/checkstyle.xml")
+}
+
+application {
+    mainClass = 'com.example.Main'
+}
+
+// 自定义任务
+task createDirs {
+    doLast {
+        sourceSets*.java.srcDirs*.each {
+            if (!it.exists()) {
+                it.mkdirs()
+            }
+        }
+        sourceSets*.resources.srcDirs*.each {
+            if (!it.exists()) {
+                it.mkdirs()
+            }
+        }
+    }
+}
+
+// 开发环境配置
+task runDev(type: JavaExec) {
+    group = "application"
+    description = "运行开发环境"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    systemProperty 'spring.profiles.active', 'dev'
+}
+
+// 生产环境配置
+task runProd(type: JavaExec) {
+    group = "application" 
+    description = "运行生产环境"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass
+    systemProperty 'spring.profiles.active', 'prod'
+}
