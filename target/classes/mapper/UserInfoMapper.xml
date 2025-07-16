@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharding.mapper.UserInfoMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.example.sharding.entity.UserInfo">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="real_name" property="realName" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="age" property="age" jdbcType="INTEGER"/>
+        <result column="gender" property="gender" jdbcType="TINYINT"/>
+        <result column="project_id" property="projectId" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="deleted" property="deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, username, real_name, email, phone, age, gender, project_id, create_time, update_time, deleted
+    </sql>
+
+    <!-- 查询用户信息（原始表名user_info会被动态替换） -->
+    <select id="selectUsersByProjectId" parameterType="string" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_info
+        WHERE project_id = #{projectId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据用户名查询（演示复杂查询） -->
+    <select id="selectUserByUsername" parameterType="map" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_info
+        WHERE username = #{username} 
+        AND project_id = #{projectId} 
+        AND deleted = 0
+    </select>
+
+    <!-- 分页查询用户 -->
+    <select id="selectUsersWithPage" parameterType="map" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM user_info
+        WHERE project_id = #{projectId} AND deleted = 0
+        <if test="username != null and username != ''">
+            AND username LIKE CONCAT('%', #{username}, '%')
+        </if>
+        <if test="email != null and email != ''">
+            AND email LIKE CONCAT('%', #{email}, '%')
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计用户数量 -->
+    <select id="countUsers" parameterType="string" resultType="long">
+        SELECT COUNT(*)
+        FROM user_info
+        WHERE project_id = #{projectId} AND deleted = 0
+    </select>
+
+    <!-- 批量插入用户 -->
+    <insert id="batchInsertUsers" parameterType="list">
+        INSERT INTO user_info (username, real_name, email, phone, age, gender, project_id)
+        VALUES
+        <foreach collection="list" item="user" separator=",">
+            (#{user.username}, #{user.realName}, #{user.email}, #{user.phone}, 
+             #{user.age}, #{user.gender}, #{user.projectId})
+        </foreach>
+    </insert>
+
+    <!-- 更新用户信息 -->
+    <update id="updateUserInfo" parameterType="com.example.sharding.entity.UserInfo">
+        UPDATE user_info
+        SET username = #{username},
+            real_name = #{realName},
+            email = #{email},
+            phone = #{phone},
+            age = #{age},
+            gender = #{gender}
+        WHERE id = #{id} AND project_id = #{projectId} AND deleted = 0
+    </update>
+
+    <!-- 软删除用户 -->
+    <update id="softDeleteUser" parameterType="map">
+        UPDATE user_info
+        SET deleted = 1
+        WHERE id = #{id} AND project_id = #{projectId} AND deleted = 0
+    </update>
+
+    <!-- JOIN查询示例（跨表查询，注意所有表名都会被动态替换） -->
+    <select id="selectUsersWithProfile" parameterType="string" resultType="map">
+        SELECT u.*, p.avatar, p.bio
+        FROM user_info u
+        LEFT JOIN user_profile p ON u.id = p.user_id
+        WHERE u.project_id = #{projectId} AND u.deleted = 0
+        ORDER BY u.create_time DESC
+    </select>
+
+</mapper>
