@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sharding.mapper.OrderMapper">
+
+    <!-- 多表联查：查询订单及其详情和用户信息 -->
+    <select id="selectOrderDetailWithUser" resultType="com.example.sharding.entity.vo.OrderDetailVO">
+        SELECT
+            o.id as orderId,
+            o.order_no as orderNo,
+            o.user_id as userId,
+            u.username,
+            u.real_name as realName,
+            o.status as orderStatus,
+            o.total_amount as totalAmount,
+            o.paid_amount as paidAmount,
+            o.shipping_address as shippingAddress,
+            o.receiver_name as receiverName,
+            o.receiver_phone as receiverPhone,
+            od.id as detailId,
+            od.product_id as productId,
+            od.product_name as productName,
+            od.product_spec as productSpec,
+            od.unit_price as unitPrice,
+            od.quantity,
+            od.subtotal,
+            o.project_id as projectId,
+            o.create_time as orderCreateTime
+        FROM order_info o
+        INNER JOIN order_detail od ON o.id = od.order_id AND o.deleted = 0 AND od.deleted = 0
+        INNER JOIN user_info u ON o.user_id = u.id AND u.deleted = 0
+        WHERE o.project_id = #{projectId}
+        <if test="orderNo != null and orderNo != ''">
+            AND o.order_no = #{orderNo}
+        </if>
+        ORDER BY o.create_time DESC, od.id ASC
+    </select>
+
+    <!-- 多表联查：根据用户ID查询订单详情 -->
+    <select id="selectOrderDetailByUserId" resultType="com.example.sharding.entity.vo.OrderDetailVO">
+        SELECT
+            o.id as orderId,
+            o.order_no as orderNo,
+            o.user_id as userId,
+            u.username,
+            u.real_name as realName,
+            o.status as orderStatus,
+            o.total_amount as totalAmount,
+            o.paid_amount as paidAmount,
+            o.shipping_address as shippingAddress,
+            o.receiver_name as receiverName,
+            o.receiver_phone as receiverPhone,
+            od.id as detailId,
+            od.product_id as productId,
+            od.product_name as productName,
+            od.product_spec as productSpec,
+            od.unit_price as unitPrice,
+            od.quantity,
+            od.subtotal,
+            o.project_id as projectId,
+            o.create_time as orderCreateTime
+        FROM order_info o
+        INNER JOIN order_detail od ON o.id = od.order_id AND o.deleted = 0 AND od.deleted = 0
+        INNER JOIN user_info u ON o.user_id = u.id AND u.deleted = 0
+        WHERE o.project_id = #{projectId}
+        AND o.user_id = #{userId}
+        ORDER BY o.create_time DESC, od.id ASC
+    </select>
+
+    <!-- 多表联查：查询指定状态的订单详情 -->
+    <select id="selectOrderDetailByStatus" resultType="com.example.sharding.entity.vo.OrderDetailVO">
+        SELECT
+            o.id as orderId,
+            o.order_no as orderNo,
+            o.user_id as userId,
+            u.username,
+            u.real_name as realName,
+            o.status as orderStatus,
+            o.total_amount as totalAmount,
+            o.paid_amount as paidAmount,
+            o.shipping_address as shippingAddress,
+            o.receiver_name as receiverName,
+            o.receiver_phone as receiverPhone,
+            od.id as detailId,
+            od.product_id as productId,
+            od.product_name as productName,
+            od.product_spec as productSpec,
+            od.unit_price as unitPrice,
+            od.quantity,
+            od.subtotal,
+            o.project_id as projectId,
+            o.create_time as orderCreateTime
+        FROM order_info o
+        INNER JOIN order_detail od ON o.id = od.order_id AND o.deleted = 0 AND od.deleted = 0
+        INNER JOIN user_info u ON o.user_id = u.id AND u.deleted = 0
+        WHERE o.project_id = #{projectId}
+        AND o.status = #{status}
+        ORDER BY o.create_time DESC, od.id ASC
+    </select>
+
+    <!-- 批量更新订单状态 -->
+    <update id="batchUpdateOrderStatus">
+        UPDATE order_info
+        SET status = #{newStatus},
+            update_time = NOW()
+        WHERE project_id = #{projectId}
+        AND deleted = 0
+        AND id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+    </update>
+
+    <!-- 根据用户ID批量更新订单状态 -->
+    <update id="batchUpdateOrderStatusByUserId">
+        UPDATE order_info
+        SET status = #{newStatus},
+            update_time = NOW()
+        WHERE project_id = #{projectId}
+        AND user_id = #{userId}
+        AND status = #{oldStatus}
+        AND deleted = 0
+    </update>
+
+</mapper>
